@@ -1,7 +1,7 @@
 ## Description
 COMP4137 Blockchain Technology Group Project
 
-This project is built on top of [NestJS](nestjs.com), please refer to documentation for dependency injection and module lifecycle detail.
+This project is built on top of [NestJS](https://nestjs.com), please refer to documentation for dependency injection and module lifecycle detail.
 
 ## Installation
 Yarn (Recommended):
