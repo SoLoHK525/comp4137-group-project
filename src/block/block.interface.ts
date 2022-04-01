@@ -6,12 +6,14 @@ export class Block {
   data: string;
   timestamp: number;
   previousBlockHash: string;
-
-  constructor(index: number, data: string, timestamp: number, previousBlockHash: string) {
+  currentBlockHash: string;
+  
+  constructor(index: number, data: string, timestamp: number, previousBlockHash: string, currentBlockHash: string) {
     this.index = index;
     this.data = data;
     this.timestamp = timestamp;
     this.previousBlockHash = previousBlockHash;
+    this.currentBlockHash = this.hash();
   }
 
   public hash() {
