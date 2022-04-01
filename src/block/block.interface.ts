@@ -7,13 +7,17 @@ export class Block {
   timestamp: number;
   previousBlockHash: string;
   currentBlockHash: string;
+  difficulty: number;
+  nonce: number;
   
-  constructor(index: number, data: string, timestamp: number, previousBlockHash: string, currentBlockHash: string) {
+  constructor(index: number, data: string, timestamp: number, previousBlockHash: string, currentBlockHash: string, difficulty: number, nonce: number) {
     this.index = index;
     this.data = data;
     this.timestamp = timestamp;
     this.previousBlockHash = previousBlockHash;
     this.currentBlockHash = this.hash();
+    this.difficulty = difficulty;
+    this.nonce = nonce;
   }
 
   public hash() {
