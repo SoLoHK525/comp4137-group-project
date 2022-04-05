@@ -23,8 +23,8 @@ export class Transaction {
 
     constructor(ins: Array<TxIn>, outs: Array<TxOut>){
         this.id = this.setId();
-        this.txIns = this.txIns;
-        this.txOuts = this.txOuts;
+        this.txIns = ins;
+        this.txOuts = outs;
     }
 
     setId(): string {
@@ -46,6 +46,47 @@ export class Transaction {
         const txOut = new TxOut(address, award)
         const tx = new Transaction([txIn],[txOut])
         return tx
+    }
+
+    public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number, fee:number){
+        const utxo = this.findUTXO(senderPubKey)
+        let sumUTXO = 0
+        const txIns = []
+        const txOuts = []
+        let i = 0
+        utxo.forEach((val)=>{
+            //the sum of UTXO of a pubkey
+            sumUTXO+=val.amount
+            // Create input object for each UTXO, sign the input by user private key
+            i++
+            txIns.push(new TxIn(val.id, i, senderPriKey))
+        })
+        const totalAmountToSpend = receiveAmount+fee
+        if(sumUTXO < totalAmountToSpend){
+            // Not enough money
+            return //exception
+        }
+        for(let n=0;n<txIns.length;n++){
+            // verify the input by signature
+            const checker = signature.verify(utxo[i].address, txIns[i].signature, txIns[i].msgHash())
+            if(!checker){
+                return //exception 
+            }
+        }
+        //Create out put to receiver by PP2K
+        txOuts.push(new TxOut(receiverPubKey, receiveAmount))
+        //return change to the sender
+        const change = sumUTXO - receiveAmount - fee
+        txOuts.push(new TxOut(senderPubKey, change))
+
+        const tx = new Transaction(txIns,txOuts)
+        // tx.setId()
+        return tx
+    }
+
+    public static findUTXO(senderPubKey){
+        // TODO
+        return []
     }
 }
 
@@ -86,7 +127,7 @@ export class signature{
         return signature;
     }
 
-    static verify(pubKey: string, sig: string, msg: string): void{
+    static verify(pubKey: string, sig: string, msg: string): boolean{
         const key = ec.keyFromPublic(pubKey, 'hex');
         return key.verify(msg, sig);
     }
