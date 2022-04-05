@@ -48,7 +48,7 @@ export class Transaction {
         return tx
     }
 
-    public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number){
+    public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number, fee:number){
         const utxo = this.findUTXO(senderPubKey)
         let sumUTXO = 0
         const txIns = []
@@ -61,8 +61,8 @@ export class Transaction {
             i++
             txIns.push(new TxIn(val.id, i, senderPriKey))
         })
-
-        if(sumUTXO < receiveAmount){
+        const totalAmountToSpend = receiveAmount+fee
+        if(sumUTXO < totalAmountToSpend){
             // Not enough money
             return //exception
         }
@@ -76,7 +76,7 @@ export class Transaction {
         //Create out put to receiver by PP2K
         txOuts.push(new TxOut(receiverPubKey, receiveAmount))
         //return change to the sender
-        const change = sumUTXO - receiveAmount
+        const change = sumUTXO - receiveAmount - fee
         txOuts.push(new TxOut(senderPubKey, change))
 
         const tx = new Transaction(txIns,txOuts)
