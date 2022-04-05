@@ -8,20 +8,26 @@ export class Transaction {
     txIns: TxIn[];
     txOuts: TxOut[];
 
-    constructor(addrs: string[], amount, txIns: TxIn[]){
-        this.txIns = txIns;
-        this.getTxOuts(addrs, amount);
-        this.getId();
-    }
+    // constructor(addrs: string[], amount, txIns: TxIn[]){
+    //     this.txIns = txIns;
+    //     this.getTxOuts(addrs, amount);
+    //     this.getId();
+    // }
 
-    getTxOuts(addrs: string[], amount){
-        addrs.forEach(addr => {
-          this.txOuts.push(new TxOut(addr, amount));
-        });
+    // getTxOuts(addrs: string[], amount){
+    //     addrs.forEach(addr => {
+    //       this.txOuts.push(new TxOut(addr, amount));
+    //     });
     
+    // }
+
+    constructor(ins: Array<TxIn>, outs: Array<TxOut>){
+        this.id = this.setId();
+        this.txIns = this.txIns;
+        this.txOuts = this.txOuts;
     }
 
-    getId(): string {
+    setId(): string {
         const txInContent: string = this.txIns
         .map ((txIn: TxIn) => txIn.txOutId + txIn.txOutIndex)
         .reduce((a,b) => a + b, '');
@@ -31,6 +37,15 @@ export class Transaction {
         .reduce((a,b) => a + b, '');
 
         return SHA256(SHA256(txInContent + txOutContent)).toString();
+    }
+
+    public static coinbaseTx(address: string, info: string): Transaction{
+        //address is the pubkey, info: any dummy string
+        const award = 50
+        const txIn = new TxIn('', -1,info)
+        const txOut = new TxOut(address, award)
+        const tx = new Transaction([txIn],[txOut])
+        return tx
     }
 }
 
