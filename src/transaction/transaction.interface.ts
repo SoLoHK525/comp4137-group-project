@@ -40,9 +40,10 @@ export class Transaction {
         return SHA256(SHA256(txInContent + txOutContent)).toString();
     }
 
+
     public static coinbaseTx(address: string, info: string, award:number): Transaction{
         //address is the pubkey, info: any dummy string
-        const txIn = new TxIn('', -1,info)
+        const txIn = new TxIn('', -1,info);
         const txOut = new TxOut(address, award)
         const tx = new Transaction([txIn],[txOut])
         return tx
@@ -145,6 +146,7 @@ export class TxIn{
         return SHA256(SHA256(this.txOutId + this.txOutIndex)).toString();
     }
 }
+
 
 export class TxOut{
     address: string; //public key

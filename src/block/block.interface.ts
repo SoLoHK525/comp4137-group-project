@@ -49,4 +49,6 @@ export class Manifest {
   public static from(obj: any): Manifest {
     return new Manifest(obj.numberOfBlocks, obj.blocks, obj.lastUpdated);
   }
+
+
 }

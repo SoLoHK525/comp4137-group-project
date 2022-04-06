@@ -25,6 +25,11 @@ export class BlockService {
     }
   }
 
+  getBlockHeight(): number {
+    const manifest = this.manifest;
+    return manifest.numberOfBlocks;
+  }
+
   getBlockHashes(): string[] {
     const manifest = this.manifest;
     return manifest.blocks;
@@ -37,6 +42,7 @@ export class BlockService {
 
     return this.manifest.blocks[this.manifest.blocks.length - 1];
   }
+
 
   async getBlock(hash: string): Promise<Block> {
     const filePath = this.getBlockFilePath(hash);
