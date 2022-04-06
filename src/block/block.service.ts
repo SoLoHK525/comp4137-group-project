@@ -25,9 +25,17 @@ export class BlockService {
     }
   }
 
+  getBlockHash(index: number) {
+    return this.manifest.blocks[index];
+  }
+
   getBlockHashes(): string[] {
     const manifest = this.manifest;
     return manifest.blocks;
+  }
+
+  size() {
+    return this.manifest.blocks.length;
   }
 
   getLatestBlockHash(): string | null {
@@ -38,18 +46,27 @@ export class BlockService {
     return this.manifest.blocks[this.manifest.blocks.length - 1];
   }
 
+  getLatestBlock(): Promise<Block> {
+    return this.getBlock(this.getLatestBlockHash());
+  }
+
   async getBlock(hash: string): Promise<Block> {
     const filePath = this.getBlockFilePath(hash);
 
     if (this.fileService.exists(filePath)) {
       const file = await this.fileService.load(filePath);
-      return JSON.parse(file.toString());
+      const block: Block = JSON.parse(file.toString());
+      return new Block(block.index, block.data, block.timestamp, block.previousBlockHash, block.currentBlockHash, block.difficulty, block.nonce);
     }
 
     return null;
   }
 
   async addBlock(block: Block): Promise<boolean> {
+    if(!await this.isValidNewBlock(block)) {
+        this.logger.verbose(`Block ${block.currentBlockHash} is not valid to be added to the chain`);
+    }
+
     this.logger.verbose('Adding block: ' + JSON.stringify(block));
 
     if (!this.manifest.addBlock(block)) {
@@ -60,6 +77,27 @@ export class BlockService {
 
     const filePath = this.getBlockFilePath(block.hash());
     await this.fileService.save(filePath, JSON.stringify(block));
+
+    return true;
+  }
+
+  async isValidNewBlock(newBlock: Block) {
+    const previousBlock = await this.getLatestBlock();
+
+    if(previousBlock == null) {
+      return true;
+    }
+
+    if (previousBlock.index + 1 !== newBlock.index) {
+      console.log("invalid index");
+      return false;
+    } else if (previousBlock.hash() !== newBlock.previousBlockHash) {
+      console.log("invalid previous block hash: " + previousBlock.hash());
+      return false;
+    } else if (newBlock.hash() !== newBlock.currentBlockHash) {
+      console.log("invalid current block hash");
+      return false;
+    }
 
     return true;
   }
@@ -76,7 +114,7 @@ export class BlockService {
 
   private async saveManifest(): Promise<boolean> {
     this.logger.verbose('Saving block manifest');
-    await this.fileService.save(this.manifestFilePath, JSON.stringify(this.manifest));
+    await this.fileService.save(this.manifestFilePath, JSON.stringify(this.manifest, null, 4));
     return true;
   }
 }

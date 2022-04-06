@@ -10,17 +10,17 @@ export class MintService {
 
   private async onApplicationBootstrap() {
     // When the application starts
-    const COINBASE_AMOUNT:number=50;
-     this.txIns = ConinbaseTxIn[1];
-      // this.txIns[0]= new ConinbaseTxIn();
-
-    this.txOuts = TxOut[1]
-    this.txOuts[0] = new TxOut("123",COINBASE_AMOUNT);
-
-    let coninBase :Transaction;
-    coninBase.txIn = this.txIns;
-    coninBase.txOut = this.txOuts;
-    coninBase.id = getTransactionId(coninBase);
+    // const COINBASE_AMOUNT:number=50;
+    //  this.txIns = ConinbaseTxIn[1];
+    //   // this.txIns[0]= new ConinbaseTxIn();
+    //
+    // this.txOuts = TxOut[1]
+    // this.txOuts[0] = new TxOut("123",COINBASE_AMOUNT);
+    //
+    // let coninBase :Transaction;
+    // coninBase.txIn = this.txIns;
+    // coninBase.txOut = this.txOuts;
+    // coninBase.id = getTransactionId(coninBase);
   }
   
 }
