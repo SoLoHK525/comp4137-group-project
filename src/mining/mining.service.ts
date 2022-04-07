@@ -1,21 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BlockService } from '../block/block.service';
-import { Block } from "../block/block.interface";
-import * as moment from "moment";
-import { Timeout } from "@nestjs/schedule";
-import { Worker } from "worker_threads";
+import { Block } from '../block/block.interface';
+import * as moment from 'moment';
+import { Timeout } from '@nestjs/schedule';
+import { Worker } from 'worker_threads';
 
 @Injectable()
 export class MiningService {
-    private readonly BLOCK_GENERATION_INTERVAL = 10; // 10 minutes
+    private readonly BLOCK_GENERATION_INTERVAL = 3; // 10 minutes
     private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 10 minutes
 
     private readonly logger = new Logger(MiningService.name);
 
-    constructor(
-        private readonly blockService: BlockService
-    ) {
-    }
+    constructor(private readonly blockService: BlockService) {}
 
     private async onApplicationBootstrap() {
         //
@@ -25,19 +22,21 @@ export class MiningService {
     async generateNewBlock(data: string) {
         let i = 0;
         while (true) {
-            this.logger.verbose("Started to mine new blocks");
+            this.logger.verbose('Started to mine new blocks');
             try {
                 const previousBlock = await this.blockService.getLatestBlock();
                 const timestamp = moment.now() / 1000;
                 const difficulty = await this.getDifficulty();
 
                 const index = previousBlock?.index + 1 || 1;
-                const previousBlockHash = previousBlock?.currentBlockHash || '0000000000000000000000000000000000000000000000000000000000000000';
+                const previousBlockHash =
+                    previousBlock?.currentBlockHash ||
+                    '0000000000000000000000000000000000000000000000000000000000000000';
                 const block = await this.findBlock(index, previousBlockHash, timestamp, data, difficulty);
                 this.logger.warn(`Mined block ${block.currentBlockHash}!`);
                 await this.blockService.addBlock(block);
             } catch (err) {
-                this.logger.error("Error while attempting to mine new blocks, err: " + err.message);
+                this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
                 this.logger.error(err.stack);
             }
 
@@ -52,26 +51,29 @@ export class MiningService {
         } = await new Promise((resolve, reject) => {
             const worker = new Worker('./worker.js', {
                 workerData: {
-                    index, previousHash, timestamp, data, difficulty
-                }
+                    index,
+                    previousHash,
+                    timestamp,
+                    data,
+                    difficulty,
+                },
             });
 
             worker.on('message', resolve);
             worker.on('error', (err) => {
-                this.logger.error("Hash worker process failed");
+                this.logger.error('Hash worker process failed');
                 reject(err);
-            })
+            });
 
             worker.on('exit', () => {
-                this.logger.debug("worked exited");
-            })
+                this.logger.debug('worked exited');
+            });
         });
 
-        if(workerData) {
+        if (workerData) {
             const { nonce, hash } = workerData;
             return new Block(index, data, timestamp, previousHash, hash, difficulty, nonce);
         }
-
 
         // while(true) {
         //     const hash = Block.hash(index, previousHash, timestamp, data, nonce);
@@ -92,10 +94,7 @@ export class MiningService {
             return 20;
         }
 
-        if (
-            latestBlock.index % this.DIFFICULTY_ADJUSTMENT_INTERVAL === 0 &&
-            latestBlock.index !== 0
-        ) {
+        if (latestBlock.index % this.DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && latestBlock.index !== 0) {
             return this.getAdjustedDifficulty();
         } else {
             return latestBlock.difficulty;
@@ -113,6 +112,9 @@ export class MiningService {
         const timeExpected = this.BLOCK_GENERATION_INTERVAL * this.DIFFICULTY_ADJUSTMENT_INTERVAL;
         const timeTaken = latestBlock.timestamp - prevAdjustmentBlock.timestamp;
 
+        console.log(timeTaken);
+        console.log(timeExpected);
+
         if (timeTaken < timeExpected / 2) {
             return prevAdjustmentBlock.difficulty + 1;
         } else if (timeTaken > timeExpected * 2) {
@@ -121,5 +123,4 @@ export class MiningService {
             return prevAdjustmentBlock.difficulty;
         }
     }
-
 }

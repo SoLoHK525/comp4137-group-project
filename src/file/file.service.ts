@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { readFile, writeFile } from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
-import { ConfigService } from "@nestjs/config";
-import { SHA256 } from "crypto-js";
+import { ConfigService } from '@nestjs/config';
+import { SHA256 } from 'crypto-js';
 
 @Injectable()
 export class FileService {
     constructor(private readonly configService: ConfigService) {
-        const host = this.configService.get<string>("host");
-        const port = this.configService.get<string>("port");
+        const host = this.configService.get<string>('host');
+        const port = this.configService.get<string>('port');
 
         const basePath = SHA256(`${host}:${port}`);
         this.basePath = process.cwd() + `/storage/${basePath}/`;
