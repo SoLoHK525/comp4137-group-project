@@ -40,36 +40,34 @@ export class Transaction {
         return SHA256(SHA256(txInContent + txOutContent)).toString();
     }
 
-    public static coinbaseTx(address: string, info: string): Transaction{
-        //address is the pubkey, info: any dummy string
-        const award = 50
-        const txIn = new TxIn('', -1,info)
-        const txOut = new TxOut(address, award)
-        const tx = new Transaction([txIn],[txOut])
-        return tx
-    }
+    // public static coinbaseTx(address: string, info: string): Transaction{
+    //     //address is the pubkey, info: any dummy string
+    //     const award = 50
+    //     const txIn = new TxIn('', -1,info)
+    //     const txOut = new TxOut(address, award)
+    //     const tx = new Transaction([txIn],[txOut])
+    //     return tx
+    // }
 
     public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number, fee:number){
-        const utxo = findUTXO(senderPubKey)
+        const utxos = this.findUTXO(senderPubKey)
         let sumUTXO = 0
         const txIns = []
         const txOuts = []
-        let i = 0
-        utxo.forEach((val)=>{
+        utxos.forEach((utxo)=>{
             //the sum of UTXO of a pubkey
-            sumUTXO+=val.amount
+            sumUTXO+=utxo.txOut.amount
             // Create input object for each UTXO, sign the input by user private key
-            i++
-            txIns.push(new TxIn(val.id, i, senderPriKey))
+            txIns.push(new TxIn(utxo.txId, utxo.txIndex, senderPriKey))
         })
         const totalAmountToSpend = receiveAmount+fee
         if(sumUTXO < totalAmountToSpend){
             // Not enough money
             return //exception
         }
-        for(let n=0;n<txIns.length;n++){
+        for(let i=0;i<txIns.length;i++){
             // verify the input by signature
-            const checker = signature.verify(utxo[i].address, txIns[i].signature, txIns[i].msgHash())
+            const checker = signature.verify(utxos[i].address, txIns[i].signature, txIns[i].msgHash())
             if(!checker){
                 return //exception 
             }
@@ -83,6 +81,11 @@ export class Transaction {
         const tx = new Transaction(txIns,txOuts)
         // tx.setId()
         return tx
+    }
+
+    public static findUTXO(sendPubKey: string){
+        // TODO
+        return []
     }
 }
 

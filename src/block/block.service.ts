@@ -113,14 +113,14 @@ export class BlockService {
     return outs
   }
 
-  public getUXTO(pubKey:string):TxOut[]{
+  public getUXTO(pubKey:string):UTXO[]{
     const allUTXO = this.getAllUTXO()
-    const utxoOfpubKey = <TxOut[]>[]
+    const utxoOfpubKey = <UTXO[]>[]
 
     allUTXO.forEach(obj =>{
       const output = obj.txOut
       if(output.address == pubKey){
-        utxoOfpubKey.push(output)
+        utxoOfpubKey.push(obj)
       }else{
         // pass
       }
