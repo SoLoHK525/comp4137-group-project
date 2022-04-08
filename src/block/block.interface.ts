@@ -6,7 +6,6 @@ import {BlockService} from "./block.service";
 export class Block {
   index: number;
   data: string;
-  transaction: [Transaction];
   timestamp: number;
   previousBlockHash: string;
   currentBlockHash: string;

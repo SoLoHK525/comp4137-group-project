@@ -85,23 +85,29 @@ export class BlockService {
 
   public getAllUTXO(): UTXO[]{
     const outs = <UTXO[]>[]
+    // loop all the blocks
     for(let i=0; i<this.manifest.blocks.length;i++){
       const currentBlockAddress = this.manifest.blocks[i]
       const currentBlock = Object.setPrototypeOf(this.getBlock(currentBlockAddress), Block.prototype)
-      const currentTx = currentBlock.Transaction // not sure data == transaction?
-      const txID = currentTx.id
-      const txOuts = currentTx.txOuts
-      const txIns = currentTx.txIns
-      txOuts.forEach((tx, i)=>{
-        outs.push(new UTXO(txID, tx, i)) //create UTXO obj that store tx, txid and index
-      })
-      txIns.forEach((spend)=>{
-        const outID = spend.txOutId;
-        const outIndex = spend.txOutIndex;
-        const indexOfTx = outs.findIndex(obj=>{
-          return obj.txId == outID && obj.txIndex == outIndex
+      const currentTx = currentBlock.data // need to convert to list of Transaction
+      // loop all the transaction
+      currentTx.forEach(currentTx =>{
+        const txID = currentTx.id
+        const txOuts = currentTx.txOuts
+        const txIns = currentTx.txIns
+        // Create UTXO object for each TxOutPut, push to UTXO
+        txOuts.forEach((txout, i)=>{
+          outs.push(new UTXO(txID, txout, i)) //create UTXO obj that store tx, txid and index
         })
-        outs.splice(indexOfTx, 1);
+        // Remove the spent money
+        txIns.forEach((spend)=>{
+          const outID = spend.txOutId;
+          const outIndex = spend.txOutIndex;
+          const indexOfTx = outs.findIndex(obj=>{
+            return obj.txId == outID && obj.txIndex == outIndex
+          })
+          outs.splice(indexOfTx, 1);
+        })
       })
     }
     return outs
