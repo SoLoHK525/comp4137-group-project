@@ -1,9 +1,12 @@
 import { SHA256 } from 'crypto-js';
 import { getUnixTimestamp } from '../utils/time';
+import {Transaction, TxOut} from "../transaction/transaction.interface";
+import {BlockService} from "./block.service";
 
 export class Block {
   index: number;
   data: string;
+  transaction: [Transaction];
   timestamp: number;
   previousBlockHash: string;
   currentBlockHash: string;
@@ -29,6 +32,9 @@ export class Manifest {
   numberOfBlocks: number;
   blocks: string[];
   lastUpdated: number;
+
+  utxo:[TxOut];
+  txPool:[Transaction];
 
   constructor(numberOfBlocks = 0, blocks: string[] = [], lastUpdated: number = getUnixTimestamp()) {
     this.numberOfBlocks = numberOfBlocks;

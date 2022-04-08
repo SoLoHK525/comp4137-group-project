@@ -1,4 +1,5 @@
 import { SHA256 } from 'crypto-js';
+import {BlockService} from '../block/block.service'
 
 var EC = require('elliptic').ec;
 var ec = new EC('secp256k1');
@@ -49,7 +50,7 @@ export class Transaction {
     }
 
     public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number, fee:number){
-        const utxo = this.findUTXO(senderPubKey)
+        const utxo = findUTXO(senderPubKey)
         let sumUTXO = 0
         const txIns = []
         const txOuts = []
@@ -83,11 +84,6 @@ export class Transaction {
         // tx.setId()
         return tx
     }
-
-    public static findUTXO(senderPubKey){
-        // TODO
-        return []
-    }
 }
 
 export class TxIn{
@@ -117,6 +113,18 @@ export class TxOut{
     constructor(address: string, amount: number){
         this.address = address;
         this.amount = amount;
+    }
+}
+
+export class UTXO{
+    txId: string;
+    txOut: TxOut;
+    txIndex: number;
+
+    constructor(txId:string, txOut:TxOut, txIndex:number) {
+        this.txId = txId;
+        this.txOut = txOut;
+        this.txIndex = txIndex;
     }
 }
 
