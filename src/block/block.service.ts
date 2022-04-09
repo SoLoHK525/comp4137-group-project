@@ -106,7 +106,9 @@ export class BlockService {
           const indexOfTx = outs.findIndex(obj=>{
             return obj.txId == outID && obj.txIndex == outIndex
           })
-          outs.splice(indexOfTx, 1);
+          if(indexOfTx>=0){
+            outs.splice(indexOfTx, 1);
+          }
         })
       })
     }
