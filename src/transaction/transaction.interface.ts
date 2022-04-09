@@ -1,4 +1,5 @@
 import { SHA256 } from 'crypto-js';
+import {BlockService} from '../block/block.service'
 
 var EC = require('elliptic').ec;
 var ec = new EC('secp256k1');
@@ -8,20 +9,7 @@ export class Transaction {
     txIns: TxIn[];
     txOuts: TxOut[];
 
-    // constructor(addrs: string[], amount, txIns: TxIn[]){
-    //     this.txIns = txIns;
-    //     this.getTxOuts(addrs, amount);
-    //     this.getId();
-    // }
-
-    // getTxOuts(addrs: string[], amount){
-    //     addrs.forEach(addr => {
-    //       this.txOuts.push(new TxOut(addr, amount));
-    //     });
-
-    // }
-
-    constructor(ins: Array<TxIn>, outs: Array<TxOut>) {
+    constructor(ins: Array<TxIn>, outs: Array<TxOut>){
         this.id = this.setId();
         this.txIns = ins;
         this.txOuts = outs;
@@ -37,62 +25,6 @@ export class Transaction {
             .reduce((a, b) => a + b, '');
 
         return SHA256(SHA256(txInContent + txOutContent)).toString();
-    }
-
-    public static coinbaseTx(address: string, info: string): Transaction {
-        //address is the pubkey, info: any dummy string
-        const award = 50;
-        const txIn = new TxIn('', -1, info);
-        const txOut = new TxOut(address, award);
-        const tx = new Transaction([txIn], [txOut]);
-        return tx;
-    }
-
-    public static createTx(
-        senderPubKey: string,
-        senderPriKey: string,
-        receiverPubKey: string,
-        receiveAmount: number,
-        fee: number,
-    ) {
-        const utxo = this.findUTXO(senderPubKey);
-        let sumUTXO = 0;
-        const txIns = [];
-        const txOuts = [];
-        let i = 0;
-        utxo.forEach((val) => {
-            //the sum of UTXO of a pubkey
-            sumUTXO += val.amount;
-            // Create input object for each UTXO, sign the input by user private key
-            i++;
-            txIns.push(new TxIn(val.id, i, senderPriKey));
-        });
-        const totalAmountToSpend = receiveAmount + fee;
-        if (sumUTXO < totalAmountToSpend) {
-            // Not enough money
-            return; //exception
-        }
-        for (let n = 0; n < txIns.length; n++) {
-            // verify the input by signature
-            const checker = signature.verify(utxo[i].address, txIns[i].signature, txIns[i].msgHash());
-            if (!checker) {
-                return; //exception
-            }
-        }
-        //Create out put to receiver by PP2K
-        txOuts.push(new TxOut(receiverPubKey, receiveAmount));
-        //return change to the sender
-        const change = sumUTXO - receiveAmount - fee;
-        txOuts.push(new TxOut(senderPubKey, change));
-
-        const tx = new Transaction(txIns, txOuts);
-        // tx.setId()
-        return tx;
-    }
-
-    public static findUTXO(senderPubKey) {
-        // TODO
-        return [];
     }
 }
 
@@ -126,7 +58,19 @@ export class TxOut {
     }
 }
 
-export class signature {
+export class UTXO{
+    txId: string;
+    txOut: TxOut;
+    txIndex: number;
+
+    constructor(txId:string, txOut:TxOut, txIndex:number) {
+        this.txId = txId;
+        this.txOut = txOut;
+        this.txIndex = txIndex;
+    }
+}
+
+export class signature{
     static sign(priKey: string, msg: string): string {
         const key = ec.keyFromPrivate(priKey, 'hex');
         const signature = key.sign(msg).toDER();
