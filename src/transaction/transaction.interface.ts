@@ -9,20 +9,7 @@ export class Transaction {
     txIns: TxIn[];
     txOuts: TxOut[];
 
-    // constructor(addrs: string[], amount, txIns: TxIn[]){
-    //     this.txIns = txIns;
-    //     this.getTxOuts(addrs, amount);
-    //     this.getId();
-    // }
-
-    // getTxOuts(addrs: string[], amount){
-    //     addrs.forEach(addr => {
-    //       this.txOuts.push(new TxOut(addr, amount));
-    //     });
-
-    // }
-
-    constructor(ins: Array<TxIn>, outs: Array<TxOut>) {
+    constructor(ins: Array<TxIn>, outs: Array<TxOut>){
         this.id = this.setId();
         this.txIns = ins;
         this.txOuts = outs;
@@ -39,76 +26,6 @@ export class Transaction {
 
         return SHA256(SHA256(txInContent + txOutContent)).toString();
     }
-
-    // public static coinbaseTx(address: string, info: string): Transaction{
-    //     //address is the pubkey, info: any dummy string
-    //     const award = 50
-    //     const txIn = new TxIn('', -1,info)
-    //     const txOut = new TxOut(address, award)
-    //     const tx = new Transaction([txIn],[txOut])
-    //     return tx
-    // }
-
-    public static createTx(senderPubKey:string, senderPriKey:string, receiverPubKey:string, receiveAmount:number, fee:number){
-        const utxos = this.findUTXO(senderPubKey)
-        let sumUTXO = 0
-        const txIns = []
-        const txOuts = []
-        utxos.forEach((utxo)=>{
-            //the sum of UTXO of a pubkey
-            sumUTXO+=utxo.txOut.amount
-            // Create input object for each UTXO, sign the input by user private key
-            txIns.push(new TxIn(utxo.txId, utxo.txIndex, senderPriKey))
-        })
-        const totalAmountToSpend = receiveAmount+fee
-        if(sumUTXO < totalAmountToSpend){
-            // Not enough money
-            return; //exception
-        }
-        for(let i=0;i<txIns.length;i++){
-            // verify the input by signature
-            const checker = signature.verify(utxos[i].address, txIns[i].signature, txIns[i].msgHash())
-            if(!checker){
-                return //exception 
-            }
-        }
-        //Create out put to receiver by PP2K
-        txOuts.push(new TxOut(receiverPubKey, receiveAmount));
-        //return change to the sender
-        const change = sumUTXO - receiveAmount - fee
-        txOuts.push(new TxOut(senderPubKey, change))
-
-        const tx = new Transaction(txIns,txOuts)
-        // tx.setId()
-        return tx;
-    }
-
-    public static findUTXO(sendPubKey: string){
-        // TODO
-        return []
-    }
-
-    // public static UTXOPool(senderPubKey){
-    //     const firstBlock = "First Block Address"
-    //     let currentBlock = firstBlock
-    //     let utxo = []
-    //     do{   
-    //         const txs = currentBlock.txs
-    //         txs.array.forEach(tx => {
-    //             // add all the transaction output into utxo
-    //             const outs = tx.txOuts
-    //             utxo = [...utxo, ...outs]
-    //             // remove used money in utxo
-    //             const ins = tx.txIns
-    //             for (let i =0;i<ins.length;i++){
-    //                 // remove inTxs in utxo
-    //             }
-    //         });
-    //         currentBlock = currentBlock.nextBlock
-    //     } while (currentBlock != null)
-
-    //     return utxo
-    // }
 }
 
 export class TxIn {
