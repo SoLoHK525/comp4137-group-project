@@ -1,25 +1,54 @@
 import { SHA256 } from 'crypto-js';
 import { getUnixTimestamp } from '../utils/time';
-import { time } from 'cron';
 import * as hexToBinary from 'hex-to-binary';
-import { Transaction, TxOut } from '../transaction/transaction.interface';
-import { BlockService } from './block.service';
+import { Transaction } from '../transaction/transaction.interface';
+import * as merkle from 'merkle-tree-gen';
+
+export class BlockData {
+    transactions: Transaction[];
+
+    constructor(transactions?: Transaction[]) {
+        this.transactions = transactions || [];
+    }
+
+    stringify(): string {
+        return JSON.stringify(this);
+    }
+
+    getMerkleTreeRoot(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            merkle.fromArray(
+                {
+                    array: this.transactions,
+                    hashalgo: 'sha256',
+                },
+                (err, tree) => {
+                    if (err) return reject(err);
+
+                    resolve(tree.root);
+                },
+            );
+        });
+    }
+}
 
 export class Block {
     index: number;
-    data: string;
+    data: BlockData;
     timestamp: number;
     previousBlockHash: string;
     currentBlockHash: string;
+    merkleTreeRoot: string;
     difficulty: number;
     nonce: number;
 
     constructor(
         index: number,
-        data: string,
+        data: BlockData,
         timestamp: number,
         previousBlockHash: string,
         currentBlockHash: string,
+        merkleTreeHash: string,
         difficulty: number,
         nonce: number,
     ) {
@@ -33,7 +62,7 @@ export class Block {
     }
 
     public hash() {
-        return Block.hash(this.index, this.previousBlockHash, this.timestamp, this.data, this.nonce);
+        return Block.hash(this.index, this.previousBlockHash, this.timestamp, this.merkleTreeRoot, this.nonce);
     }
 
     public static hashMatchesDifficulty(hash: string, difficulty: number) {
@@ -54,8 +83,8 @@ export class Manifest {
     blocks: string[];
     lastUpdated: number;
 
-    utxo: [TxOut];
-    txPool: [Transaction];
+    // utxo: [TxOut];
+    // txPool: [Transaction];
 
     constructor(numberOfBlocks = 0, blocks: string[] = [], lastUpdated: number = getUnixTimestamp()) {
         this.numberOfBlocks = numberOfBlocks;

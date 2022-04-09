@@ -1,5 +1,4 @@
 import { SHA256 } from 'crypto-js';
-import { Block, Manifest } from 'src/block/block.interface';
 import { BlockService } from 'src/block/block.service';
 import { TxOut } from 'src/transaction/transaction.interface';
 
@@ -8,10 +7,10 @@ export class Mint {
     txIn: number; //input of coinbase transaction is the block height
     txOut: TxOut;
 
-    constructor(txin: number, txout: TxOut) {
+    constructor(txIn: number, txOut: TxOut) {
         this.id = this.setCoinbaseTxID();
-        this.txIn = txin;
-        this.txOut = txout;
+        this.txIn = txIn;
+        this.txOut = txOut;
     }
 
     public static coinbaseTx(address: string, award: number, blockService: BlockService): Mint {

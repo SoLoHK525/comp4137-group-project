@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BlockService } from '../block/block.service';
-import { Block } from '../block/block.interface';
+import { Block, BlockData } from '../block/block.interface';
 import * as moment from 'moment';
 import { Timeout } from '@nestjs/schedule';
 import { Worker } from 'worker_threads';
+import { CoinBaseTx, CoinbaseTxIn, TxOut } from "../transaction/transaction.interface";
+import { SHA256 } from "crypto-js";
 
 @Injectable()
 export class MiningService {
@@ -12,39 +14,49 @@ export class MiningService {
 
     private readonly logger = new Logger(MiningService.name);
 
-    constructor(private readonly blockService: BlockService) {}
+    constructor(private readonly blockService: BlockService) {
+    }
 
     private async onApplicationBootstrap() {
         //
     }
 
     @Timeout(5000)
-    async generateNewBlock(data: string) {
-        let i = 0;
-        while (true) {
-            this.logger.verbose('Started to mine new blocks');
-            try {
-                const previousBlock = await this.blockService.getLatestBlock();
-                const timestamp = moment.now() / 1000;
-                const difficulty = await this.getDifficulty();
+    async generateNewBlock() {
+        try {
+            // TODO: fix coinbase tx
+            const coinbaseTx = new CoinBaseTx(
+                new CoinbaseTxIn(this.blockService.getBlockHeight()),
+                [new TxOut(SHA256("HIHIMOTHERFUCKER").toString(), 50)]
+            );
+            const blockData = new BlockData([coinbaseTx]);
 
-                const index = previousBlock?.index + 1 || 1;
-                const previousBlockHash =
-                    previousBlock?.currentBlockHash ||
-                    '0000000000000000000000000000000000000000000000000000000000000000';
-                const block = await this.findBlock(index, previousBlockHash, timestamp, data, difficulty);
-                this.logger.warn(`Mined block ${block.currentBlockHash}!`);
-                await this.blockService.addBlock(block);
-            } catch (err) {
-                this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
-                this.logger.error(err.stack);
+            while (true) {
+                this.logger.verbose('Started to mine new blocks');
+                try {
+                    const previousBlock = await this.blockService.getLatestBlock();
+                    const timestamp = moment.now() / 1000;
+                    const difficulty = await this.getDifficulty();
+
+                    const index = previousBlock?.index + 1 || 1;
+                    const previousBlockHash =
+                        previousBlock?.currentBlockHash ||
+                        '0000000000000000000000000000000000000000000000000000000000000000';
+                    const block = await this.findBlock(index, previousBlockHash, timestamp, blockData, difficulty);
+                    this.logger.warn(`Mined block ${block.currentBlockHash}!`);
+                    await this.blockService.addBlock(block);
+                } catch (err) {
+                    this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
+                    this.logger.error(err.stack);
+                }
             }
-
-            //if(i++ > 5) return;
+        } catch (err) {
+            this.logger.error(err.message);
+            this.logger.error(err.stack);
         }
     }
 
-    async findBlock(index: number, previousHash: string, timestamp: number, data: string, difficulty: number) {
+    async findBlock(index: number, previousHash: string, timestamp: number, data: BlockData, difficulty: number) {
         const workerData: {
             nonce: number;
             hash: string;
@@ -71,20 +83,11 @@ export class MiningService {
         });
 
         if (workerData) {
-            const { nonce, hash } = workerData;
-            return new Block(index, data, timestamp, previousHash, hash, difficulty, nonce);
-        }
+            const {nonce, hash} = workerData;
+            const merkleTreeRoot = await data.getMerkleTreeRoot();
 
-        // while(true) {
-        //     const hash = Block.hash(index, previousHash, timestamp, data, nonce);
-        //     if(Block.hashMatchesDifficulty(hash, difficulty)) {
-        //         return new Block(index, data, timestamp, previousHash, hash, difficulty, nonce);
-        //     }
-        //     nonce++;
-        //     if(nonce % 100 == 0) {
-        //         //this.logger.verbose("Tried 10 hashes, still going");
-        //     }
-        // }
+            return new Block(index, data, timestamp, previousHash, hash, merkleTreeRoot, difficulty, nonce);
+        }
     }
 
     async getDifficulty() {
@@ -111,9 +114,6 @@ export class MiningService {
 
         const timeExpected = this.BLOCK_GENERATION_INTERVAL * this.DIFFICULTY_ADJUSTMENT_INTERVAL;
         const timeTaken = latestBlock.timestamp - prevAdjustmentBlock.timestamp;
-
-        console.log(timeTaken);
-        console.log(timeExpected);
 
         if (timeTaken < timeExpected / 2) {
             return prevAdjustmentBlock.difficulty + 1;

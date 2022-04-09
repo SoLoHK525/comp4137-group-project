@@ -33,6 +33,7 @@
     "crypto-js": "^4.1.1",
     "elliptic": "^6.5.4",
     "hex-to-binary": "^1.0.1",
+    "merkle-tree-gen": "^1.1.0",
     "moment": "^2.29.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",

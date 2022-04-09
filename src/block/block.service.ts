@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FileService } from '../file/file.service';
-import { Block, Manifest } from './block.interface';
+import { Block, BlockData, Manifest } from './block.interface';
 import { Transaction, TxOut, UTXO } from '../transaction/transaction.interface';
 import { TransactionService } from '../transaction/transaction.service';
 
@@ -63,12 +63,15 @@ export class BlockService {
         if (this.fileService.exists(filePath)) {
             const file = await this.fileService.load(filePath);
             const block: Block = JSON.parse(file.toString());
+            const blockData = new BlockData(block.data.transactions);
+
             return new Block(
                 block.index,
-                block.data,
+                blockData,
                 block.timestamp,
                 block.previousBlockHash,
                 block.currentBlockHash,
+                await blockData.getMerkleTreeRoot(),
                 block.difficulty,
                 block.nonce,
             );
@@ -91,52 +94,7 @@ export class BlockService {
         await this.saveManifest();
 
         const filePath = this.getBlockFilePath(block.hash());
-        await this.fileService.save(filePath, JSON.stringify(block));
-    }
-
-    public getAllUTXO(): UTXO[] {
-        const outs = <UTXO[]>[];
-        // loop all the blocks
-        for (let i = 0; i < this.manifest.blocks.length; i++) {
-            const currentBlockAddress = this.manifest.blocks[i];
-            const currentBlock = Object.setPrototypeOf(this.getBlock(currentBlockAddress), Block.prototype);
-            const currentTx = currentBlock.data; // need to convert to list of Transaction
-            // loop all the transaction
-            currentTx.forEach((currentTx) => {
-                const txID = currentTx.id;
-                const txOuts = currentTx.txOuts;
-                const txIns = currentTx.txIns;
-                // Create UTXO object for each TxOutPut, push to UTXO
-                txOuts.forEach((txout, i) => {
-                    outs.push(new UTXO(txID, txout, i)); //create UTXO obj that store tx, txid and index
-                });
-                // Remove the spent money
-                txIns.forEach((spend) => {
-                    const outID = spend.txOutId;
-                    const outIndex = spend.txOutIndex;
-                    const indexOfTx = outs.findIndex((obj) => {
-                        return obj.txId == outID && obj.txIndex == outIndex;
-                    });
-                    outs.splice(indexOfTx, 1);
-                });
-            });
-        }
-        return outs;
-    }
-
-    public getUXTO(pubKey: string): UTXO[] {
-        const allUTXO = this.getAllUTXO();
-        const utxoOfpubKey = <UTXO[]>[];
-
-        allUTXO.forEach((obj) => {
-            const output = obj.txOut;
-            if (output.address == pubKey) {
-                utxoOfpubKey.push(obj);
-            } else {
-                // pass
-            }
-        });
-        return utxoOfpubKey;
+        await this.fileService.save(filePath, JSON.stringify(block, null, 4));
     }
 
     // public findUTXO(pubKey:string):any{
