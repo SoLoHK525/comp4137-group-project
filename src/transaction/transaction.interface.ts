@@ -1,4 +1,5 @@
 import { SHA256 } from 'crypto-js';
+import { Block } from 'src/block/block.interface';
 
 var EC = require('elliptic').ec;
 var ec = new EC('secp256k1');
@@ -39,13 +40,13 @@ export class Transaction {
         return SHA256(SHA256(txInContent + txOutContent)).toString();
     }
 
-    public static coinbaseTx(address: string, info: string): Transaction {
+    public static coinbaseTx(address: string, info: string): Transaction{
         //address is the pubkey, info: any dummy string
-        const award = 50;
-        const txIn = new TxIn('', -1, info);
-        const txOut = new TxOut(address, award);
-        const tx = new Transaction([txIn], [txOut]);
-        return tx;
+        const award = 50
+        const txIn = new TxIn('', -1,info)
+        const txOut = new TxOut(address, award)
+        const tx = new Transaction([txIn],[txOut])
+        return tx
     }
 
     public static createTx(
@@ -82,18 +83,54 @@ export class Transaction {
         //Create out put to receiver by PP2K
         txOuts.push(new TxOut(receiverPubKey, receiveAmount));
         //return change to the sender
-        const change = sumUTXO - receiveAmount - fee;
-        txOuts.push(new TxOut(senderPubKey, change));
+        const change = sumUTXO - receiveAmount - fee
+        txOuts.push(new TxOut(senderPubKey, change))
 
-        const tx = new Transaction(txIns, txOuts);
+        const tx = new Transaction(txIns,txOuts)
         // tx.setId()
         return tx;
     }
 
-    public static findUTXO(senderPubKey) {
-        // TODO
-        return [];
+    public static findUTXO(senderPubKey){
+        const allBlock = [];
+        const allTxOut = [];
+        const allTxIn = [];
+        
+        allBlock.forEach((block)=>{
+            const txs = block.txs
+            txs.forEach(tx => {
+                const txOuts = tx.txOuts
+                txOuts.forEach(out => {
+                    if(out.address == senderPubKey){
+                        allTxOut.push(out)
+                    }
+                });
+            });
+        })
+        return []
     }
+
+    // public static UTXOPool(senderPubKey){
+    //     const firstBlock = "First Block Address"
+    //     let currentBlock = firstBlock
+    //     let utxo = []
+    //     do{   
+    //         const txs = currentBlock.txs
+    //         txs.array.forEach(tx => {
+    //             // add all the transaction output into utxo
+    //             const outs = tx.txOuts
+    //             utxo = [...utxo, ...outs]
+    //             // remove used money in utxo
+    //             const ins = tx.txIns
+    //             for (let i =0;i<ins.length;i++){
+    //                 // remove inTxs in utxo
+    //             }
+    //         });
+    //         currentBlock = currentBlock.nextBlock
+    //     } while (currentBlock != null)
+
+    //     return utxo
+    // }
 }
 
 export class TxIn {

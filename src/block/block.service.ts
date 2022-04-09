@@ -25,6 +25,11 @@ export class BlockService {
         }
     }
 
+  getBlockHeight(): number {
+    const manifest = this.manifest;
+    return manifest.numberOfBlocks;
+  }
+
     getBlockHash(index: number) {
         return this.manifest.blocks[index];
     }
