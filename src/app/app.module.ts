@@ -2,25 +2,25 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FileModule } from '../file/file.module';
-import { BlockService } from "../block/block.service";
-import { MiningService } from "../mining/mining.service";
-import { MintService } from "../mint/mint.service";
-import { NetworkService } from "../network/network.service";
-import { TransactionService } from "../transaction/transaction.service";
-import config from "../constants/config";
+import { BlockService } from '../block/block.service';
+import { MiningService } from '../mining/mining.service';
+import { MintService } from '../mint/mint.service';
+import { NetworkService } from '../network/network.service';
+import { TransactionService } from '../transaction/transaction.service';
+import config from '../constants/config';
 import { ConfigModule } from '@nestjs/config';
-import { NetworkController } from "../network/network.controller";
-import { ScheduleModule } from "@nestjs/schedule";
-import { BroadcastService } from "../broadcast/broadcast.service";
-import { EventEmitterModule } from "@nestjs/event-emitter";
-import { BroadcastController } from "../broadcast/broadcast.controller";
+import { NetworkController } from '../network/network.controller';
+import { ScheduleModule } from '@nestjs/schedule';
+import { BroadcastService } from '../broadcast/broadcast.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BroadcastController } from '../broadcast/broadcast.controller';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
             load: [config],
             ignoreEnvFile: true,
-            isGlobal: true
+            isGlobal: true,
         }),
         EventEmitterModule.forRoot({
             // set this to `true` to use wildcards
@@ -39,10 +39,17 @@ import { BroadcastController } from "../broadcast/broadcast.controller";
             ignoreErrors: false,
         }),
         ScheduleModule.forRoot(),
-        FileModule
+        FileModule,
     ],
     controllers: [AppController, NetworkController, BroadcastController],
-    providers: [AppService, BlockService, BroadcastService, MiningService, MintService, NetworkService, TransactionService],
+    providers: [
+        AppService,
+        BlockService,
+        BroadcastService,
+        MiningService,
+        MintService,
+        NetworkService,
+        TransactionService,
+    ],
 })
-export class AppModule {
-}
+export class AppModule {}

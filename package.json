@@ -31,6 +31,7 @@
     "@nestjs/schedule": "^1.1.0",
     "axios": "^0.26.1",
     "crypto-js": "^4.1.1",
+    "hex-to-binary": "^1.0.1",
     "moment": "^2.29.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
