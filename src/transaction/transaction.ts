@@ -34,66 +34,72 @@ export class Transaction {
         return SHA256(SHA256(txInContent + txOutContent)).toString();
     }
 
-    public static createRegularTx(senderPubKey: string, senderPriKey: string, receiverPubKey: string, receiveAmount: number, fee: number) {
+    public static createRegularTx(
+        senderPubKey: string,
+        senderPriKey: string,
+        receiverPubKey: string,
+        receiveAmount: number,
+        fee: number,
+    ) {
         const utxo = this.findUTXO(senderPubKey);
-        let sumUTXO = 0
-        const txIns = []
-        const txOuts = []
-        let i = 0
+        let sumUTXO = 0;
+        const txIns = [];
+        const txOuts = [];
+        let i = 0;
         utxo.forEach((val) => {
             //the sum of UTXO of a pubkey
-            sumUTXO += val.amount
+            sumUTXO += val.amount;
             // Create input object for each UTXO, sign the input by user private key
-            i++
-            txIns.push(new RegularTxIn(val.id, i, senderPriKey))
-        })
-        const totalAmountToSpend = receiveAmount + fee
+            i++;
+            txIns.push(new RegularTxIn(val.id, i, senderPriKey));
+        });
+        const totalAmountToSpend = receiveAmount + fee;
         if (sumUTXO < totalAmountToSpend) {
             // Not enough money
-            return //exception
+            return; //exception
         }
         for (let n = 0; n < txIns.length; n++) {
             // verify the input by signature
-            const checker = Signature.verify(utxo[i].address, txIns[i].signature, txIns[i].msgHash())
+            const checker = Signature.verify(utxo[i].address, txIns[i].signature, txIns[i].msgHash());
             if (!checker) {
-                return //exception 
+                return; //exception
             }
         }
         //Create out put to receiver by PP2K
-        txOuts.push(new TxOut(receiverPubKey, receiveAmount))
+        txOuts.push(new TxOut(receiverPubKey, receiveAmount));
         //return change to the sender
-        const change = sumUTXO - receiveAmount - fee
+        const change = sumUTXO - receiveAmount - fee;
         if (change > 0) {
-            txOuts.push(new TxOut(senderPubKey, change))
+            txOuts.push(new TxOut(senderPubKey, change));
         }
-        const tx = new Transaction(txIns, txOuts)
+        const tx = new Transaction(txIns, txOuts);
         // tx.setId()
-        return tx
+        return tx;
     }
 
     public static findUTXO(senderPubKey) {
-        const allBlock = []
-        const allTxOut = []
-        const allTxIn = []
+        const allBlock = [];
+        const allTxOut = [];
+        const allTxIn = [];
         allBlock.forEach((block) => {
-            const txs = block.txs
-            txs.forEach(tx => {
-                const txOuts = tx.txOuts
-                txOuts.forEach(out => {
+            const txs = block.txs;
+            txs.forEach((tx) => {
+                const txOuts = tx.txOuts;
+                txOuts.forEach((out) => {
                     if (out.address == senderPubKey) {
-                        allTxOut.push(out)
+                        allTxOut.push(out);
                     }
                 });
             });
-        })
-        return []
+        });
+        return [];
     }
 
     // public static UTXOPool(senderPubKey){
     //     const firstBlock = "First Block Address"
     //     let currentBlock = firstBlock
     //     let utxo = []
-    //     do{   
+    //     do{
     //         const txs = currentBlock.txs
     //         txs.array.forEach(tx => {
     //             // add all the transaction output into utxo
@@ -130,8 +136,7 @@ export class CoinBaseTx extends Transaction {
 }
 
 class TxIn {
-    constructor() {
-    }
+    constructor() {}
 }
 
 export class RegularTxIn extends TxIn {

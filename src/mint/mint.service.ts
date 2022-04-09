@@ -3,12 +3,9 @@ import { BlockService } from '../block/block.service';
 
 @Injectable()
 export class MintService {
+    constructor(private readonly blockService: BlockService) {}
 
-  constructor(private readonly blockService: BlockService) {}
-
-  private async onApplicationBootstrap() {
-    // When the application starts
-  
-  }
-  
+    private async onApplicationBootstrap() {
+        // When the application starts
+    }
 }

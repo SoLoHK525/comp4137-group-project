@@ -1,5 +1,5 @@
 import { SHA256 } from 'crypto-js';
-import {BlockService} from '../block/block.service'
+import { BlockService } from '../block/block.service';
 
 var EC = require('elliptic').ec;
 var ec = new EC('secp256k1');
@@ -9,7 +9,7 @@ export class Transaction {
     txIns: TxIn[];
     txOuts: TxOut[];
 
-    constructor(ins: Array<TxIn>, outs: Array<TxOut>){
+    constructor(ins: Array<TxIn>, outs: Array<TxOut>) {
         this.id = this.setId();
         this.txIns = ins;
         this.txOuts = outs;
@@ -58,19 +58,19 @@ export class TxOut {
     }
 }
 
-export class UTXO{
+export class UTXO {
     txId: string;
     txOut: TxOut;
     txIndex: number;
 
-    constructor(txId:string, txOut:TxOut, txIndex:number) {
+    constructor(txId: string, txOut: TxOut, txIndex: number) {
         this.txId = txId;
         this.txOut = txOut;
         this.txIndex = txIndex;
     }
 }
 
-export class signature{
+export class signature {
     static sign(priKey: string, msg: string): string {
         const key = ec.keyFromPrivate(priKey, 'hex');
         const signature = key.sign(msg).toDER();

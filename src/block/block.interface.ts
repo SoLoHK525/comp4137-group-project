@@ -2,8 +2,8 @@ import { SHA256 } from 'crypto-js';
 import { getUnixTimestamp } from '../utils/time';
 import { time } from 'cron';
 import * as hexToBinary from 'hex-to-binary';
-import {Transaction, TxOut} from "../transaction/transaction.interface";
-import {BlockService} from "./block.service";
+import { Transaction, TxOut } from '../transaction/transaction.interface';
+import { BlockService } from './block.service';
 
 export class Block {
     index: number;
@@ -54,14 +54,14 @@ export class Manifest {
     blocks: string[];
     lastUpdated: number;
 
-  utxo:[TxOut];
-  txPool:[Transaction];
+    utxo: [TxOut];
+    txPool: [Transaction];
 
-  constructor(numberOfBlocks = 0, blocks: string[] = [], lastUpdated: number = getUnixTimestamp()) {
-    this.numberOfBlocks = numberOfBlocks;
-    this.blocks = blocks;
-    this.lastUpdated = lastUpdated;
-  }
+    constructor(numberOfBlocks = 0, blocks: string[] = [], lastUpdated: number = getUnixTimestamp()) {
+        this.numberOfBlocks = numberOfBlocks;
+        this.blocks = blocks;
+        this.lastUpdated = lastUpdated;
+    }
 
     public addBlock(block: Block): boolean {
         if (this.blocks.length == 0 || block.previousBlockHash === this.blocks[this.blocks.length - 1]) {
