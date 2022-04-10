@@ -71,6 +71,8 @@ export class BroadcastService {
             digest: this.hashPayload(jsonPayload),
         };
 
+        this.broadcastedMessage.add(encapsulatedData.digest);
+
         const promises = [];
 
         for (const peer of peers) {

@@ -11,7 +11,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:dev2": "nest start --watch -- --port 5013 --client 127.0.0.1:5012",
+    "start:dev2": "nest start --watch -- --noMine --port 5013 --client 127.0.0.1:5012",
     "start:dev3": "nest start --watch -- --port 5014 --client 127.0.0.1:5012",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",

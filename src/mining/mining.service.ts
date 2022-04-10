@@ -8,6 +8,9 @@ import { CoinBaseTx, CoinbaseTxIn, TxOut } from "../transaction/transaction.inte
 import { SHA256 } from "crypto-js";
 import { TransactionService } from "../transaction/transaction.service";
 import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
+import { BroadcastService } from "../broadcast/broadcast.service";
+import { OnEvent } from "@nestjs/event-emitter";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MiningService {
@@ -17,19 +20,47 @@ export class MiningService {
     private readonly logger = new Logger(MiningService.name);
 
     constructor(
+        private readonly configService: ConfigService,
         private readonly blockService: BlockService,
-        private readonly transactionPoolService: TransactionPoolService
+        private readonly transactionPoolService: TransactionPoolService,
+        private readonly broadcastService: BroadcastService
     ) {}
 
     private async onApplicationBootstrap() {
         //
     }
 
+    @OnEvent("broadcast.blockMined")
+    async onBlockMined(block: Block) {
+        const blockData = new BlockData(block.data.transactions);
+
+        block = new Block(
+            block.index,
+            blockData,
+            block.timestamp,
+            block.previousBlockHash,
+            block.currentBlockHash,
+            await blockData.getMerkleTreeRoot(),
+            block.difficulty,
+            block.nonce,
+        );
+
+        if(await this.blockService.isValidNewBlock(block)) {
+            await this.blockService.addBlock(block);
+        }
+    }
+
     @Timeout(5000)
     async generateNewBlock() {
+        const noMine = this.configService.get<boolean>("noMine");
+
+        if(noMine) {
+            this.logger.warn("Mining has been disabled in this node");
+            return;
+        }
+
         try {
             // TODO: fix coinbase tx
-
             while (true) {
                 this.logger.verbose('Started to mine new blocks');
                 const transactions = await this.transactionPoolService.pollTransactions();
@@ -37,10 +68,8 @@ export class MiningService {
                 const coinbaseTx = new CoinBaseTx(
                     new CoinbaseTxIn(this.blockService.getBlockHeight()),
                     [new TxOut("-----BEGIN PUBLIC KEY-----\n" +
-                        "MIGeMA0GCSqGSIb3DQEBAQUAA4GMADCBiAKBgH78oV+TH/zaEWsddK7Q4sAYYn5G\n" +
-                        "YtykKjSOdlh01o6ilIWS4j8d1Gjti+bqvhm0hMjePJ+UqqS7J03adgx9oMCb0m2o\n" +
-                        "zA4mYgvwEHbIuiDvXef/IAWLVJBdstpkTgZ2h9bHh2cAtjyVBT3BrDu17aEVPmRh\n" +
-                        "L0RKhsLaxdEmkV89AgMBAAE=\n" +
+                        "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEbK51Z/SrGGZYvJXwWTtagXgRIlzc3hWw\n" +
+                        "JdJlHaSNpB9gtAZGGtYMk7USrq9vGFdEPk6jt7g9EY7OQM2yIS1VVA==\n" +
                         "-----END PUBLIC KEY-----", 50)]
                 );
 
@@ -57,6 +86,17 @@ export class MiningService {
                         '0000000000000000000000000000000000000000000000000000000000000000';
                     const block = await this.findBlock(index, previousBlockHash, timestamp, blockData, difficulty);
                     this.logger.warn(`Mined block ${block.currentBlockHash}!`);
+
+                    this.broadcastService.broadcastEvent("blockMined", block).then((
+                        {
+                            broadcasted,
+                            failed,
+                            total
+                        }
+                    ) => {
+                        this.logger.verbose(`Broadcasted new block to ${broadcasted} known nodes, ${failed} failed, ${total} total`)
+                    });
+
                     await this.blockService.addBlock(block);
                 } catch (err) {
                     this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);

@@ -12,5 +12,10 @@ export const argv = yargs(process.argv.slice(2))
             type: 'array',
             describe: 'Know peers',
         },
+        noMine: {
+            type: 'boolean',
+            describe: 'no-mining',
+            default: false
+        }
     })
     .parse();
