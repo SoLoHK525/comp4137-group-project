@@ -6,16 +6,20 @@ import { Timeout } from '@nestjs/schedule';
 import { Worker } from 'worker_threads';
 import { CoinBaseTx, CoinbaseTxIn, TxOut } from "../transaction/transaction.interface";
 import { SHA256 } from "crypto-js";
+import { TransactionService } from "../transaction/transaction.service";
+import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
 
 @Injectable()
 export class MiningService {
-    private readonly BLOCK_GENERATION_INTERVAL = 3; // 10 minutes
-    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 10 minutes
+    private readonly BLOCK_GENERATION_INTERVAL = 10; // 10 secs per block
+    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // adjust per 10 blocks
 
     private readonly logger = new Logger(MiningService.name);
 
-    constructor(private readonly blockService: BlockService) {
-    }
+    constructor(
+        private readonly blockService: BlockService,
+        private readonly transactionPoolService: TransactionPoolService
+    ) {}
 
     private async onApplicationBootstrap() {
         //
@@ -25,14 +29,23 @@ export class MiningService {
     async generateNewBlock() {
         try {
             // TODO: fix coinbase tx
-            const coinbaseTx = new CoinBaseTx(
-                new CoinbaseTxIn(this.blockService.getBlockHeight()),
-                [new TxOut(SHA256("HIHIMOTHERFUCKER").toString(), 50)]
-            );
-            const blockData = new BlockData([coinbaseTx]);
 
             while (true) {
                 this.logger.verbose('Started to mine new blocks');
+                const transactions = await this.transactionPoolService.pollTransactions();
+
+                const coinbaseTx = new CoinBaseTx(
+                    new CoinbaseTxIn(this.blockService.getBlockHeight()),
+                    [new TxOut("-----BEGIN PUBLIC KEY-----\n" +
+                        "MIGeMA0GCSqGSIb3DQEBAQUAA4GMADCBiAKBgH78oV+TH/zaEWsddK7Q4sAYYn5G\n" +
+                        "YtykKjSOdlh01o6ilIWS4j8d1Gjti+bqvhm0hMjePJ+UqqS7J03adgx9oMCb0m2o\n" +
+                        "zA4mYgvwEHbIuiDvXef/IAWLVJBdstpkTgZ2h9bHh2cAtjyVBT3BrDu17aEVPmRh\n" +
+                        "L0RKhsLaxdEmkV89AgMBAAE=\n" +
+                        "-----END PUBLIC KEY-----", 50)]
+                );
+
+                const blockData = new BlockData([coinbaseTx, ...transactions]);
+
                 try {
                     const previousBlock = await this.blockService.getLatestBlock();
                     const timestamp = moment.now() / 1000;

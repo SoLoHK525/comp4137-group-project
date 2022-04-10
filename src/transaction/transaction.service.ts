@@ -3,6 +3,8 @@ import { BlockService } from '../block/block.service';
 import { RegularTx, RegularTxIn, Signature, Transaction, TxIn, TxOut, UTXO } from './transaction.interface';
 import { OnEvent } from '@nestjs/event-emitter';
 import { BroadcastService } from 'src/broadcast/broadcast.service';
+import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
+import { SHA256 } from "crypto-js";
 
 @Injectable()
 export class TransactionService {
@@ -10,7 +12,8 @@ export class TransactionService {
 
     constructor(
         private readonly blockService: BlockService,
-        private readonly broadcastService: BroadcastService
+        private readonly broadcastService: BroadcastService,
+        private readonly transactionPoolService: TransactionPoolService
     ) {}
 
     onApplicationBootstrap() {
@@ -57,15 +60,17 @@ export class TransactionService {
         const change = sumUTXO - receiveAmount - fee;
         txOuts.push(new TxOut(senderPubKey, change));
 
-        const tx = new Transaction(txIns, txOuts);
+        const tx = new RegularTx(txIns, txOuts);
         tx.setId();
 
         this.broadcast(tx);
+        await this.transactionPoolService.addTransaction(tx);
+
         return tx;
     }
 
     public async getAllUTXO(): Promise<UTXO[]> {
-        const outs = <UTXO[]>[];
+        const outs: UTXO[] = [];
         // loop all the blocks
         for (let i = 0; i < this.blockService.getBlockHeight(); i++) {
             const currentBlockHash = this.blockService.getBlockHash(i);

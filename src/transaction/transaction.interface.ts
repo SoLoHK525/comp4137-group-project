@@ -5,6 +5,7 @@ var EC = require('elliptic').ec;
 var ec = new EC('secp256k1');
 
 export class Transaction {
+    type: string;
     id: string;
     txIns: TxIn[];
     txOuts: TxOut[];
@@ -119,6 +120,7 @@ export class Transaction {
 }
 
 export class RegularTx extends Transaction {
+    type: 'regular';
     txIns: RegularTxIn[];
 
     constructor(ins: RegularTxIn[], outs: TxOut[]) {
@@ -127,6 +129,7 @@ export class RegularTx extends Transaction {
 }
 
 export class CoinBaseTx extends Transaction {
+    type: 'coinbase';
     txIns: CoinbaseTxIn[];
 
     constructor(ins: CoinbaseTxIn, outs: TxOut[]) {

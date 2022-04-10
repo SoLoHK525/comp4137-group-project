@@ -14,6 +14,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BroadcastService } from '../broadcast/broadcast.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BroadcastController } from '../broadcast/broadcast.controller';
+import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
+import { TransactionController } from "../transaction/transaction.controller";
 
 @Module({
     imports: [
@@ -41,7 +43,7 @@ import { BroadcastController } from '../broadcast/broadcast.controller';
         ScheduleModule.forRoot(),
         FileModule,
     ],
-    controllers: [AppController, NetworkController, BroadcastController],
+    controllers: [AppController, NetworkController, BroadcastController, TransactionController],
     providers: [
         AppService,
         BlockService,
@@ -50,6 +52,7 @@ import { BroadcastController } from '../broadcast/broadcast.controller';
         MintService,
         NetworkService,
         TransactionService,
+        TransactionPoolService
     ],
 })
 export class AppModule {}
