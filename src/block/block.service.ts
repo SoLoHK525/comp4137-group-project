@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FileService } from '../file/file.service';
 import { Block, BlockData, Manifest } from './block.interface';
-import { Transaction, TxOut, UTXO } from '../transaction/transaction.interface';
-import { TransactionService } from '../transaction/transaction.service';
+import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
+import { OnEvent } from "@nestjs/event-emitter";
+import { NetworkService } from "../network/network.service";
 
 @Injectable()
 export class BlockService {
@@ -15,7 +16,12 @@ export class BlockService {
         return this.manifest;
     }
 
-    constructor(private fileService: FileService) {}
+    constructor(
+        private fileService: FileService,
+        private transactionPoolService: TransactionPoolService,
+        private networkService: NetworkService
+    ) {
+    }
 
     private async onApplicationBootstrap() {
         if (this.fileService.exists(this.manifestFilePath)) {
@@ -27,25 +33,79 @@ export class BlockService {
         }
     }
 
-    getBlockHeight(): number {
+    @OnEvent("network.newPeer")
+    private async onNewPeer(address: string) {
+        const blocks = await Promise.all(await this.networkService.request<Block[]>("GET", "/block", null, address).then(blocks => {
+           return blocks.map(async (block) => {
+               const blockData = new BlockData(block.data.transactions);
+
+               return new Block(
+                   block.index,
+                   blockData,
+                   block.timestamp,
+                   block.previousBlockHash,
+                   block.currentBlockHash,
+                   await blockData.getMerkleTreeRoot(),
+                   block.difficulty,
+                   block.nonce,
+               );
+           })
+        }));
+
+        const localBlockLength = this.manifest.blocks.length;
+
+        if (blocks.length > localBlockLength) {
+            if (localBlockLength > 0) {
+                const index = blocks.findIndex(block => {
+                    return block.previousBlockHash === this.getLatestBlockHash();
+                });
+
+                if (index != -1) {
+                    this.logger.warn("Appending block:");
+
+                    for (const block of blocks.slice(index)) {
+                        await this.addBlock(block);
+                    }
+                } else {
+                    this.logger.error("Chains are incompatible, not gonna switch to another chain");
+                }
+            }else{
+                this.logger.warn("Appending block:");
+
+                for (const block of blocks) {
+                    await this.addBlock(block);
+                }
+            }
+        }
+    }
+
+    private async deleteAllBlocks() {
+        const hashes = this.getBlockHashes();
+
+        return Promise.all(hashes.map(hash => {
+            return this.fileService.delete(this.getBlockFilePath(hash));
+        }));
+    }
+
+    public getBlockHeight(): number {
         const manifest = this.manifest;
         return manifest.numberOfBlocks;
     }
 
-    getBlockHash(index: number) {
+    public getBlockHash(index: number) {
         return this.manifest.blocks[index];
     }
 
-    getBlockHashes(): string[] {
+    public getBlockHashes(): string[] {
         const manifest = this.manifest;
         return manifest.blocks;
     }
 
-    size() {
+    public size() {
         return this.manifest.blocks.length;
     }
 
-    getLatestBlockHash(): string | null {
+    public getLatestBlockHash(): string | null {
         if (this.manifest.blocks.length == 0) {
             return null;
         }
@@ -53,11 +113,11 @@ export class BlockService {
         return this.manifest.blocks[this.manifest.blocks.length - 1];
     }
 
-    getLatestBlock(): Promise<Block> {
+    public getLatestBlock(): Promise<Block> {
         return this.getBlock(this.getLatestBlockHash());
     }
 
-    async getBlock(hash: string): Promise<Block> {
+    public async getBlock(hash: string): Promise<Block> {
         const filePath = this.getBlockFilePath(hash);
 
         if (this.fileService.exists(filePath)) {
@@ -80,21 +140,21 @@ export class BlockService {
         return null;
     }
 
-    async addBlock(block: Block): Promise<boolean> {
+    public async addBlock(block: Block): Promise<boolean> {
         if (!(await this.isValidNewBlock(block))) {
             this.logger.verbose(`Block ${block.currentBlockHash} is not valid to be added to the chain`);
         }
 
-        this.logger.verbose('Adding block: ' + JSON.stringify(block));
+        this.logger.verbose('Adding block: ' + block.currentBlockHash);
 
         if (!this.manifest.addBlock(block)) {
             return false;
         }
-
         await this.saveManifest();
 
         const filePath = this.getBlockFilePath(block.hash());
         await this.fileService.save(filePath, JSON.stringify(block, null, 4));
+        await this.transactionPoolService.removeTransactions(block.data.transactions);
     }
 
     // public findUTXO(pubKey:string):any{
@@ -108,7 +168,7 @@ export class BlockService {
     //   return utxo
     // }
 
-    async isValidNewBlock(newBlock: Block) {
+    public async isValidNewBlock(newBlock: Block) {
         const previousBlock = await this.getLatestBlock();
 
         if (previousBlock == null) {

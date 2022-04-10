@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FileService } from "../file/file.service";
-import { RegularTx } from "../transaction/transaction.interface";
+import { RegularTx, Transaction } from "../transaction/transaction.interface";
 import { OnEvent } from "@nestjs/event-emitter";
 
 @Injectable()
@@ -29,10 +29,19 @@ export class TransactionPoolService {
         return transactions;
     }
 
+    public async removeTransactions(txs: Transaction[]) {
+        this.transactions = this.transactions.filter(transactionInPool => {
+            return txs.findIndex(tx => tx.id === transactionInPool.id) === -1;
+        });
+
+        await this.save();
+    }
+
     public async addTransaction(tx: RegularTx) {
         const existTx = this.hasTransaction(tx);
 
         if (!existTx) {
+            this.logger.verbose("Added transaction " + tx.id);
             this.transactions.push(tx);
             await this.save();
             return true;
@@ -51,14 +60,17 @@ export class TransactionPoolService {
     }
 
     public hasTransaction(tx: RegularTx) {
-        return this.transactions.find(t => t.id === tx.id) != null;
+        console.log(this.transactions.findIndex(t => t.id === tx.id));
+        const bool = this.transactions.findIndex(t => t.id === tx.id) !== -1;
+        console.log(bool);
+        return bool;
     }
 
     private async save() {
         this.logger.verbose("Saving transactions");
         await this.fileService.save(this.transactionPoolFilePath, JSON.stringify({
             transactions: this.transactions
-        }, null, 4));
+        }));
         return true;
     }
 

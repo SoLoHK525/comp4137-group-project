@@ -111,6 +111,8 @@ export class TransactionService {
         const allUtxo = await this.getAllUTXO();
 
         return allUtxo.filter((tx) => {
+            console.log(pubKey);
+            console.log(tx.txOut.address);
             return tx.txOut.address === pubKey;
         });
     }

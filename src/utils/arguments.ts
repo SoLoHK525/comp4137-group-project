@@ -16,6 +16,10 @@ export const argv = yargs(process.argv.slice(2))
             type: 'boolean',
             describe: 'no-mining',
             default: false
+        },
+        wallet: {
+            type: 'string',
+            describe: 'Wallet address'
         }
     })
     .parse();

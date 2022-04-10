@@ -5,8 +5,6 @@ import * as moment from 'moment';
 import { Timeout } from '@nestjs/schedule';
 import { Worker } from 'worker_threads';
 import { CoinBaseTx, CoinbaseTxIn, TxOut } from "../transaction/transaction.interface";
-import { SHA256 } from "crypto-js";
-import { TransactionService } from "../transaction/transaction.service";
 import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
 import { BroadcastService } from "../broadcast/broadcast.service";
 import { OnEvent } from "@nestjs/event-emitter";
@@ -15,9 +13,10 @@ import { ConfigService } from "@nestjs/config";
 @Injectable()
 export class MiningService {
     private readonly BLOCK_GENERATION_INTERVAL = 10; // 10 secs per block
-    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // adjust per 10 blocks
+    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 5; // adjust per 5 blocks
 
     private readonly logger = new Logger(MiningService.name);
+    private worker: Worker;
 
     constructor(
         private readonly configService: ConfigService,
@@ -47,15 +46,22 @@ export class MiningService {
 
         if(await this.blockService.isValidNewBlock(block)) {
             await this.blockService.addBlock(block);
+
+            if(this.worker != null){
+                await this.worker.terminate();
+                this.logger.warn("Terminated worker");
+            }
         }
     }
 
     @Timeout(5000)
     async generateNewBlock() {
         const noMine = this.configService.get<boolean>("noMine");
+        const wallet = this.configService.get<string>("wallet");
 
-        if(noMine) {
-            this.logger.warn("Mining has been disabled in this node");
+        if(noMine || !wallet) {
+            const message = noMine ? "Mining has been disabled with --noMine" : "No wallet address is specified";
+            this.logger.warn(`Mining has been disabled in this node since ${message}`);
             return;
         }
 
@@ -67,10 +73,7 @@ export class MiningService {
 
                 const coinbaseTx = new CoinBaseTx(
                     new CoinbaseTxIn(this.blockService.getBlockHeight()),
-                    [new TxOut("-----BEGIN PUBLIC KEY-----\n" +
-                        "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEbK51Z/SrGGZYvJXwWTtagXgRIlzc3hWw\n" +
-                        "JdJlHaSNpB9gtAZGGtYMk7USrq9vGFdEPk6jt7g9EY7OQM2yIS1VVA==\n" +
-                        "-----END PUBLIC KEY-----", 50)]
+                    [new TxOut("04425a41b9a090b18e64ad0f716ead1b4626e4d8df55447ad451146d2ff92e40aca23c92b0e8df91307e38d27a1ef90ad45760444978fb4e84fdd91a62a7f38246", 50)]
                 );
 
                 const blockData = new BlockData([coinbaseTx, ...transactions]);
@@ -99,8 +102,10 @@ export class MiningService {
 
                     await this.blockService.addBlock(block);
                 } catch (err) {
-                    this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
-                    this.logger.error(err.stack);
+                    if(err) {
+                        this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
+                        this.logger.error(err.stack);
+                    }
                 }
             }
         } catch (err) {
@@ -127,12 +132,17 @@ export class MiningService {
             worker.on('message', resolve);
             worker.on('error', (err) => {
                 this.logger.error('Hash worker process failed');
+                this.worker = null;
                 reject(err);
             });
 
             worker.on('exit', () => {
                 this.logger.debug('worked exited');
+                this.worker = null;
+                reject();
             });
+
+            this.worker = worker;
         });
 
         if (workerData) {

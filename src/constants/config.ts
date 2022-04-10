@@ -4,5 +4,6 @@ export default () => ({
     host: '127.0.0.1',
     port: argv.port,
     client: argv.client,
-    noMine: argv.noMine
+    noMine: argv.noMine,
+    wallet: argv.wallet
 });

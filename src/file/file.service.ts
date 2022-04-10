@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
 import { ConfigService } from '@nestjs/config';
@@ -28,6 +28,10 @@ export class FileService {
 
     exists(path: string): boolean {
         return existsSync(this.basePath + path);
+    }
+
+    async delete(path: string) {
+        return unlink(path);
     }
 
     createDirectoryToFile(file: string) {

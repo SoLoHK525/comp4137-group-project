@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
 import { randomBytes } from 'crypto';
 import { Timeout } from '@nestjs/schedule';
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 @Injectable()
 export class NetworkService {
@@ -17,7 +18,10 @@ export class NetworkService {
 
     private readonly logger = new Logger(NetworkService.name);
 
-    constructor(private configService: ConfigService) {
+    constructor(
+        private configService: ConfigService,
+        private readonly eventEmitter: EventEmitter2
+    ) {
         this.address = this.configService.get<string>('host') + ':' + this.configService.get<number>('port');
     }
 
@@ -145,6 +149,7 @@ export class NetworkService {
         if (!this.peers.has(address)) {
             this.peers.add(address);
             this.requestPeerList(address);
+            this.eventEmitter.emit("network.newPeer", address);
             this.logger.verbose(`Added new peer: ${address}`);
         }
     }
