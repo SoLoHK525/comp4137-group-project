@@ -9,6 +9,7 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "genKey": "node genKeyPair.js",
     "start": "nest start",
     "start:dev": "nest start --watch -- --wallet 04425a41b9a090b18e64ad0f716ead1b4626e4d8df55447ad451146d2ff92e40aca23c92b0e8df91307e38d27a1ef90ad45760444978fb4e84fdd91a62a7f38246",
     "start:dev:nomine": "nest start --watch -- --noMine",
