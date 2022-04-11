@@ -12,8 +12,8 @@ import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MiningService {
-    private readonly BLOCK_GENERATION_INTERVAL = 10; // 10 secs per block
-    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 5; // adjust per 5 blocks
+    private readonly BLOCK_GENERATION_INTERVAL = 30; // 10 secs per block
+    private readonly DIFFICULTY_ADJUSTMENT_INTERVAL = 5; // adjust per 10 blocks
 
     private readonly logger = new Logger(MiningService.name);
     private worker: Worker;
@@ -157,7 +157,7 @@ export class MiningService {
         const latestBlock = await this.blockService.getLatestBlock();
 
         if (latestBlock === null) {
-            return 20;
+            return 16;
         }
 
         if (latestBlock.index % this.DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && latestBlock.index !== 0) {
