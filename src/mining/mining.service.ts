@@ -4,11 +4,11 @@ import { Block, BlockData } from '../block/block.interface';
 import * as moment from 'moment';
 import { Timeout } from '@nestjs/schedule';
 import { Worker } from 'worker_threads';
-import { CoinBaseTx, CoinbaseTxIn, TxOut } from "../transaction/transaction.interface";
-import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
-import { BroadcastService } from "../broadcast/broadcast.service";
-import { OnEvent } from "@nestjs/event-emitter";
-import { ConfigService } from "@nestjs/config";
+import { CoinBaseTx, CoinbaseTxIn, TxOut } from '../transaction/transaction.interface';
+import { TransactionPoolService } from '../transaction-pool/transaction-pool.service';
+import { BroadcastService } from '../broadcast/broadcast.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MiningService {
@@ -22,14 +22,14 @@ export class MiningService {
         private readonly configService: ConfigService,
         private readonly blockService: BlockService,
         private readonly transactionPoolService: TransactionPoolService,
-        private readonly broadcastService: BroadcastService
+        private readonly broadcastService: BroadcastService,
     ) {}
 
     private async onApplicationBootstrap() {
         //
     }
 
-    @OnEvent("broadcast.blockMined")
+    @OnEvent('broadcast.blockMined')
     async onBlockMined(block: Block) {
         const blockData = new BlockData(block.data.transactions);
 
@@ -44,23 +44,23 @@ export class MiningService {
             block.nonce,
         );
 
-        if(await this.blockService.isValidNewBlock(block)) {
+        if (await this.blockService.isValidNewBlock(block)) {
             await this.blockService.addBlock(block);
 
-            if(this.worker != null){
+            if (this.worker != null) {
                 await this.worker.terminate();
-                this.logger.warn("Terminated worker");
+                this.logger.warn('Terminated worker');
             }
         }
     }
 
     @Timeout(5000)
     async generateNewBlock() {
-        const noMine = this.configService.get<boolean>("noMine");
-        const wallet = this.configService.get<string>("wallet");
+        const noMine = this.configService.get<boolean>('noMine');
+        const wallet = this.configService.get<string>('wallet');
 
-        if(noMine || !wallet) {
-            const message = noMine ? "Mining has been disabled with --noMine" : "No wallet address is specified";
+        if (noMine || !wallet) {
+            const message = noMine ? 'Mining has been disabled with --noMine' : 'No wallet address is specified';
             this.logger.warn(`Mining has been disabled in this node since ${message}`);
             return;
         }
@@ -71,10 +71,12 @@ export class MiningService {
                 this.logger.verbose('Started to mine new blocks');
                 const transactions = await this.transactionPoolService.pollTransactions();
 
-                const coinbaseTx = new CoinBaseTx(
-                    new CoinbaseTxIn(this.blockService.getBlockHeight()),
-                    [new TxOut("04425a41b9a090b18e64ad0f716ead1b4626e4d8df55447ad451146d2ff92e40aca23c92b0e8df91307e38d27a1ef90ad45760444978fb4e84fdd91a62a7f38246", 50)]
-                );
+                const coinbaseTx = new CoinBaseTx(new CoinbaseTxIn(this.blockService.getBlockHeight()), [
+                    new TxOut(
+                        '04425a41b9a090b18e64ad0f716ead1b4626e4d8df55447ad451146d2ff92e40aca23c92b0e8df91307e38d27a1ef90ad45760444978fb4e84fdd91a62a7f38246',
+                        50,
+                    ),
+                ]);
 
                 const blockData = new BlockData([coinbaseTx, ...transactions]);
 
@@ -90,19 +92,15 @@ export class MiningService {
                     const block = await this.findBlock(index, previousBlockHash, timestamp, blockData, difficulty);
                     this.logger.warn(`Mined block ${block.currentBlockHash}!`);
 
-                    this.broadcastService.broadcastEvent("blockMined", block).then((
-                        {
-                            broadcasted,
-                            failed,
-                            total
-                        }
-                    ) => {
-                        this.logger.verbose(`Broadcasted new block to ${broadcasted} known nodes, ${failed} failed, ${total} total`)
+                    this.broadcastService.broadcastEvent('blockMined', block).then(({ broadcasted, failed, total }) => {
+                        this.logger.verbose(
+                            `Broadcasted new block to ${broadcasted} known nodes, ${failed} failed, ${total} total`,
+                        );
                     });
 
                     await this.blockService.addBlock(block);
                 } catch (err) {
-                    if(err) {
+                    if (err) {
                         this.logger.error('Error while attempting to mine new blocks, err: ' + err.message);
                         this.logger.error(err.stack);
                     }
@@ -146,7 +144,7 @@ export class MiningService {
         });
 
         if (workerData) {
-            const {nonce, hash} = workerData;
+            const { nonce, hash } = workerData;
             const merkleTreeRoot = await data.getMerkleTreeRoot();
 
             return new Block(index, data, timestamp, previousHash, hash, merkleTreeRoot, difficulty, nonce);

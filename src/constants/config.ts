@@ -5,5 +5,5 @@ export default () => ({
     port: argv.port,
     client: argv.client,
     noMine: argv.noMine,
-    wallet: argv.wallet
+    wallet: argv.wallet,
 });

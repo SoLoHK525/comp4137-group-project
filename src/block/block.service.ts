@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FileService } from '../file/file.service';
 import { Block, BlockData, Manifest } from './block.interface';
-import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
-import { OnEvent } from "@nestjs/event-emitter";
-import { NetworkService } from "../network/network.service";
+import { TransactionPoolService } from '../transaction-pool/transaction-pool.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { NetworkService } from '../network/network.service';
 
 @Injectable()
 export class BlockService {
@@ -19,9 +19,8 @@ export class BlockService {
     constructor(
         private fileService: FileService,
         private transactionPoolService: TransactionPoolService,
-        private networkService: NetworkService
-    ) {
-    }
+        private networkService: NetworkService,
+    ) {}
 
     private async onApplicationBootstrap() {
         if (this.fileService.exists(this.manifestFilePath)) {
@@ -33,44 +32,46 @@ export class BlockService {
         }
     }
 
-    @OnEvent("network.newPeer")
+    @OnEvent('network.newPeer')
     private async onNewPeer(address: string) {
-        const blocks = await Promise.all(await this.networkService.request<Block[]>("GET", "/block", null, address).then(blocks => {
-           return blocks.map(async (block) => {
-               const blockData = new BlockData(block.data.transactions);
+        const blocks = await Promise.all(
+            await this.networkService.request<Block[]>('GET', '/block', null, address).then((blocks) => {
+                return blocks.map(async (block) => {
+                    const blockData = new BlockData(block.data.transactions);
 
-               return new Block(
-                   block.index,
-                   blockData,
-                   block.timestamp,
-                   block.previousBlockHash,
-                   block.currentBlockHash,
-                   await blockData.getMerkleTreeRoot(),
-                   block.difficulty,
-                   block.nonce,
-               );
-           })
-        }));
+                    return new Block(
+                        block.index,
+                        blockData,
+                        block.timestamp,
+                        block.previousBlockHash,
+                        block.currentBlockHash,
+                        await blockData.getMerkleTreeRoot(),
+                        block.difficulty,
+                        block.nonce,
+                    );
+                });
+            }),
+        );
 
         const localBlockLength = this.manifest.blocks.length;
 
         if (blocks.length > localBlockLength) {
             if (localBlockLength > 0) {
-                const index = blocks.findIndex(block => {
+                const index = blocks.findIndex((block) => {
                     return block.previousBlockHash === this.getLatestBlockHash();
                 });
 
                 if (index != -1) {
-                    this.logger.warn("Appending block:");
+                    this.logger.warn('Appending block:');
 
                     for (const block of blocks.slice(index)) {
                         await this.addBlock(block);
                     }
                 } else {
-                    this.logger.error("Chains are incompatible, not gonna switch to another chain");
+                    this.logger.error('Chains are incompatible, not gonna switch to another chain');
                 }
-            }else{
-                this.logger.warn("Appending block:");
+            } else {
+                this.logger.warn('Appending block:');
 
                 for (const block of blocks) {
                     await this.addBlock(block);
@@ -82,9 +83,11 @@ export class BlockService {
     private async deleteAllBlocks() {
         const hashes = this.getBlockHashes();
 
-        return Promise.all(hashes.map(hash => {
-            return this.fileService.delete(this.getBlockFilePath(hash));
-        }));
+        return Promise.all(
+            hashes.map((hash) => {
+                return this.fileService.delete(this.getBlockFilePath(hash));
+            }),
+        );
     }
 
     public getBlockHeight(): number {

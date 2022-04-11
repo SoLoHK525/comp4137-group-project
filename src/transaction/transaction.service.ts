@@ -3,8 +3,8 @@ import { BlockService } from '../block/block.service';
 import { RegularTx, RegularTxIn, Signature, Transaction, TxIn, TxOut, UTXO } from './transaction.interface';
 import { OnEvent } from '@nestjs/event-emitter';
 import { BroadcastService } from 'src/broadcast/broadcast.service';
-import { TransactionPoolService } from "../transaction-pool/transaction-pool.service";
-import { SHA256 } from "crypto-js";
+import { TransactionPoolService } from '../transaction-pool/transaction-pool.service';
+import { SHA256 } from 'crypto-js';
 
 @Injectable()
 export class TransactionService {
@@ -13,14 +13,14 @@ export class TransactionService {
     constructor(
         private readonly blockService: BlockService,
         private readonly broadcastService: BroadcastService,
-        private readonly transactionPoolService: TransactionPoolService
+        private readonly transactionPoolService: TransactionPoolService,
     ) {}
 
     onApplicationBootstrap() {
         // When the application starts
     }
 
-    public async createTx (
+    public async createTx(
         senderPubKey: string,
         senderPriKey: string,
         receiverPubKey: string,
@@ -90,14 +90,14 @@ export class TransactionService {
 
                 // Remove the spent money
                 txIns.forEach((tx) => {
-                    if(tx instanceof RegularTxIn) {
+                    if (tx instanceof RegularTxIn) {
                         const outID = tx.txOutId;
                         const outIndex = tx.txOutIndex;
                         const indexOfTx = outs.findIndex((obj) => {
                             return obj.txId == outID && obj.txIndex == outIndex;
                         });
 
-                        if(indexOfTx >= 0) {
+                        if (indexOfTx >= 0) {
                             outs.splice(indexOfTx, 1);
                         }
                     }

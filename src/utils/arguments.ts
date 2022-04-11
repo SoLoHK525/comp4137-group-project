@@ -15,11 +15,11 @@ export const argv = yargs(process.argv.slice(2))
         noMine: {
             type: 'boolean',
             describe: 'no-mining',
-            default: false
+            default: false,
         },
         wallet: {
             type: 'string',
-            describe: 'Wallet address'
-        }
+            describe: 'Wallet address',
+        },
     })
     .parse();
