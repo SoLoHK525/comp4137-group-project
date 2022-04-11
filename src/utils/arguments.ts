@@ -8,9 +8,9 @@ export const argv = yargs(process.argv.slice(2))
             default: 5012,
             describe: 'Port of the client',
         },
-        peer: {
+        client: {
             type: 'array',
-            describe: 'Know peers',
+            describe: 'Known peer clients',
         },
         noMine: {
             type: 'boolean',
