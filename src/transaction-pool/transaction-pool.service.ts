@@ -60,9 +60,7 @@ export class TransactionPoolService {
     }
 
     public hasTransaction(tx: RegularTx) {
-        console.log(this.transactions.findIndex(t => t.id === tx.id));
         const bool = this.transactions.findIndex(t => t.id === tx.id) !== -1;
-        console.log(bool);
         return bool;
     }
 
